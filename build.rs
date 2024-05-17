@@ -1,8 +1,13 @@
 fn main() -> Result<(), Box<dyn std::error::Error>> {
-    let config = tonic_build::configure().out_dir("proto-compiled");
+    let config = tonic_build::configure().out_dir("src/proto-gen");
+
     config.compile(
-        &["proto/services.proto","proto/push.proto"],
-        &["proto"],
+        &[
+            "proto/data.proto",
+            "proto/services.proto",
+            //"proto/push.proto",  grpc push test
+        ],
+        &["proto/"],
     )?;
     Ok(())
 }

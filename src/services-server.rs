@@ -2,10 +2,10 @@ use futures_util::stream;
 use futures_util::Stream;
 
 use my_im::const_file::*;
+use my_im::data::{GetServicesMsg, ServiceMsg};
 use my_im::grpc_errors::GrpcErrors;
 use my_im::redis_pool::RedisPool;
 use my_im::services::greeter_server::{Greeter, GreeterServer};
-use my_im::services::{GetServicesMsg, HelloReply, HelloRequest, ServiceMsg};
 
 use reqwest::Client;
 use std::net::SocketAddr;
@@ -15,11 +15,11 @@ use tokio::sync::Mutex;
 use tonic::{transport::Server, Request, Response, Status};
 
 #[derive(Debug)]
-pub struct MyGreeter {
+pub struct ServiceInner {
     client: Client,
     pool_clone: Arc<Mutex<RedisPool>>,
 }
-impl MyGreeter {
+impl ServiceInner {
     pub async fn new() -> Result<Self, GrpcErrors> {
         let client = Client::new();
         let pool_clone = Arc::new(Mutex::new(RedisPool::new(DEFAULT_REDIS_URL).await?));
@@ -42,20 +42,8 @@ impl MyGreeter {
     }
 }
 #[tonic::async_trait]
-impl Greeter for MyGreeter {
+impl Greeter for ServiceInner {
     type GetServicesStream = Pin<Box<dyn Stream<Item = Result<ServiceMsg, Status>> + Send + Sync>>;
-    async fn say_hello(
-        &self,
-        request: Request<HelloRequest>,
-    ) -> Result<Response<HelloReply>, Status> {
-        println!("Got a request: {:?}", request);
-
-        let reply = HelloReply {
-            message: format!("This is server1, Hello {}!", request.into_inner().name),
-        };
-
-        Ok(Response::new(reply))
-    }
 
     async fn get_services(
         &self,
@@ -82,7 +70,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let redis_pool = Arc::new(Mutex::new(RedisPool::new(DEFAULT_REDIS_URL).await?));
     let pool_clone_in_heart = Arc::clone(&redis_pool); // 克隆连接池
     let pool_clone_in_server = Arc::clone(&redis_pool); // 克隆连接池
-    
+
     //心跳监听
     tokio::spawn(async move {
         if let Err(e) = start_heartbeat(heart_beat_client, count_clone, pool_clone_in_heart).await {
@@ -111,7 +99,7 @@ async fn start_heartbeat(
     pool_clone: Arc<Mutex<RedisPool>>,
 ) -> Result<(), GrpcErrors> {
     use tokio::time::{self, Duration};
-    let mut interval = time::interval(Duration::from_secs(10));
+    let mut interval = time::interval(Duration::from_secs(DEFAULT_SLEEP_TIME));
     loop {
         interval.tick().await;
         let services_msgs = pool_clone.try_lock()?.get_service_msgs_from_redis().await?;
@@ -147,7 +135,7 @@ async fn server_run(
     greeter_client: Client,
     pool_clone: Arc<Mutex<RedisPool>>,
 ) -> Result<(), GrpcErrors> {
-    let mut greeter = MyGreeter::new().await?;
+    let mut greeter = ServiceInner::new().await?;
     greeter.client(greeter_client).pool_clone(pool_clone);
     Server::builder()
         .add_service(GreeterServer::new(greeter))
@@ -155,4 +143,3 @@ async fn server_run(
         .await?;
     Ok(())
 }
-

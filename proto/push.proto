@@ -1,15 +1,9 @@
 syntax = "proto3";
 package push;
 
+import "data.proto";
 service Greeter {
-  rpc SayHello(HelloRequest) returns (HelloReply);
-  rpc PushMsg(Msg) returns (PushResult);
+  rpc HeartBeat(data.HeartBeatRequest) returns (data.HeartBeatReply){};
+  rpc PushMsg(data.Msg) returns (data.PushResult){};
 }
 
-message HelloRequest { string name = 1; }
-
-message HelloReply { string message = 1; }
-
-message Msg { string msg = 1; }
-
-message PushResult { bool result = 1; }

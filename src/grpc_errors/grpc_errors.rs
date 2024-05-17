@@ -1,10 +1,11 @@
 use super::grpc_errors_status::GrpcErrorTemplate;
 use tonic::Status;
 // 定义一个包含具体错误状态码的枚举
-
+#[derive(Debug)]
 pub enum GrpcErrors {
     ConnectServerFailed(&'static str),
     GetDataFromRedisFailed(&'static str),
+    AllPushUrlsFailed(&'static str),
 
     Io(std::io::Error),
     Json(serde_json::Error),
@@ -17,6 +18,7 @@ pub enum GrpcErrors {
     DynError(Box<dyn std::error::Error>),
     TonicTransportError(tonic::transport::Error),
     StatusError(Status),
+    RdkafkaError(rdkafka::error::KafkaError),
     // 添加更多错误类型
 }
 impl From<std::io::Error> for GrpcErrors {
@@ -77,6 +79,56 @@ impl From<Status> for GrpcErrors {
         GrpcErrors::StatusError(error)
     }
 }
+impl From<rdkafka::error::KafkaError> for GrpcErrors {
+    fn from(error: rdkafka::error::KafkaError) -> Self {
+        GrpcErrors::RdkafkaError(error)
+    }
+}
+
+impl std::fmt::Display for GrpcErrors {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            GrpcErrors::ConnectServerFailed(msg) => write!(f, "连接服务器失败: {}", msg),
+            GrpcErrors::GetDataFromRedisFailed(msg) => write!(f, "从Redis获取数据失败: {}", msg),
+            GrpcErrors::AllPushUrlsFailed(msg) => write!(f, "所有推送URL都失败: {}", msg),
+            GrpcErrors::Io(err) => write!(f, "IO错误: {}", err),
+            GrpcErrors::Json(err) => write!(f, "JSON解析错误: {}", err),
+            GrpcErrors::ParseInt(err) => write!(f, "解析整数错误: {}", err),
+            GrpcErrors::RedisError(err) => write!(f, "Redis错误: {}", err),
+            GrpcErrors::RunRedisError(err) => write!(f, "运行Redis错误: {}", err),
+            GrpcErrors::TryLockError(err) => write!(f, "尝试锁定错误: {}", err),
+            GrpcErrors::ReqwestError(err) => write!(f, "Reqwest错误: {}", err),
+            GrpcErrors::ReqwestToStrError(err) => write!(f, "Reqwest ToStr 错误: {}", err),
+            GrpcErrors::DynError(err) => write!(f, "动态错误: {}", err),
+            GrpcErrors::TonicTransportError(err) => write!(f, "Tonic Transport 错误: {}", err),
+            GrpcErrors::StatusError(err) => write!(f, "Status 错误: {}", err),
+            GrpcErrors::RdkafkaError(err) => write!(f, "RDKafka 错误: {}", err),
+            // 添加更多错误类型
+        }
+    }
+}
+impl std::error::Error for GrpcErrors {
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            GrpcErrors::ConnectServerFailed(_) => None,
+            GrpcErrors::GetDataFromRedisFailed(_) => None,
+            GrpcErrors::AllPushUrlsFailed(_) => None,
+            GrpcErrors::Io(err) => Some(err),
+            GrpcErrors::Json(err) => Some(err),
+            GrpcErrors::ParseInt(err) => Some(err),
+            GrpcErrors::RedisError(err) => Some(err),
+            GrpcErrors::RunRedisError(err) => Some(err),
+            GrpcErrors::TryLockError(err) => Some(err),
+            GrpcErrors::ReqwestError(err) => Some(err),
+            GrpcErrors::ReqwestToStrError(err) => Some(err),
+            GrpcErrors::DynError(err) => Some(err.as_ref()),
+            GrpcErrors::TonicTransportError(err) => Some(err),
+            GrpcErrors::StatusError(err) => Some(err),
+            GrpcErrors::RdkafkaError(err) => Some(err),
+            // 添加更多错误类型
+        }
+    }
+}
 impl From<GrpcErrors> for Status {
     fn from(err: GrpcErrors) -> Self {
         match err {
@@ -85,6 +137,9 @@ impl From<GrpcErrors> for Status {
             }
             GrpcErrors::GetDataFromRedisFailed(e) => {
                 GrpcErrorTemplate::GET_DATA_FROM_REDIS_FAILED.get_status(e)
+            }
+            GrpcErrors::AllPushUrlsFailed(e) => {
+                GrpcErrorTemplate::ALL_PUSH_URLS_FAILED.get_status(e)
             }
             GrpcErrors::Io(e) => GrpcErrorTemplate::IO_READ_ERROR.get_status(e),
             GrpcErrors::Json(e) => GrpcErrorTemplate::JSON_PARSE_ERROR.get_status(e),
@@ -101,26 +156,7 @@ impl From<GrpcErrors> for Status {
                 GrpcErrorTemplate::TONIC_TRANSPORT_ERROR.get_status(e)
             }
             GrpcErrors::StatusError(e) => GrpcErrorTemplate::STATUS_ERROR.get_status(e),
-        }
-    }
-}
-impl std::fmt::Display for GrpcErrors {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            GrpcErrors::ConnectServerFailed(msg) => write!(f, "连接服务器失败: {}", msg),
-            GrpcErrors::GetDataFromRedisFailed(msg) => write!(f, "从Redis获取数据失败: {}", msg),
-            GrpcErrors::Io(err) => write!(f, "IO错误: {}", err),
-            GrpcErrors::Json(err) => write!(f, "JSON解析错误: {}", err),
-            GrpcErrors::ParseInt(err) => write!(f, "解析整数错误: {}", err),
-            GrpcErrors::RedisError(err) => write!(f, "Redis错误: {}", err),
-            GrpcErrors::RunRedisError(err) => write!(f, "运行Redis错误: {}", err),
-            GrpcErrors::TryLockError(err) => write!(f, "尝试锁定错误: {}", err),
-            GrpcErrors::ReqwestError(err) => write!(f, "Reqwest错误: {}", err),
-            GrpcErrors::ReqwestToStrError(err) => write!(f, "Reqwest ToStr 错误: {}", err),
-            GrpcErrors::DynError(err) => write!(f, "动态错误: {}", err),
-            GrpcErrors::TonicTransportError(err) => write!(f, "Tonic Transport 错误: {}", err),
-            GrpcErrors::StatusError(err) => write!(f, "Status 错误: {}", err),
-            // 添加更多错误类型
+            GrpcErrors::RdkafkaError(e) => GrpcErrorTemplate::RDKAFKA_ERROR.get_status(e),
         }
     }
 }

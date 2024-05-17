@@ -1,6 +1,6 @@
 use super::const_file::*;
+use super::data::ServiceMsg;
 use super::grpc_errors::GrpcErrors;
-use super::services::ServiceMsg;
 use bb8::Pool;
 use bb8_redis::redis::AsyncCommands;
 use bb8_redis::RedisConnectionManager;
@@ -20,9 +20,7 @@ impl RedisPool {
         Ok(RedisPool { pool })
     }
     ///get service msgs from redis
-    pub async fn get_service_msgs_from_redis(
-        &self,
-    ) -> Result<Vec<ServiceMsg>, GrpcErrors> {
+    pub async fn get_service_msgs_from_redis(&self) -> Result<Vec<ServiceMsg>, GrpcErrors> {
         let mut datas = Vec::new();
         let mut services = Vec::new();
         let mut conn = self.pool.get().await?;

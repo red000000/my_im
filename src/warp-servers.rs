@@ -14,7 +14,7 @@ mod test {
         let heart_router = warp::path("heartbeat")
             .and(warp::path::end())
             .then(|| async { warp::reply() });
-        let router = warp::path("test1")
+        let router = warp::path("ws")
             .and(warp::path::end())
             .and(warp::ws())
             .then(|ws: warp::filters::ws::Ws| async {
@@ -41,7 +41,7 @@ mod test {
         let heart_router = warp::path("heartbeat")
             .and(warp::path::end())
             .then(|| async { warp::reply() });
-        let router = warp::path("test2")
+        let router = warp::path("ws")
             .and(warp::path::end())
             .and(warp::ws())
             .then(|ws: warp::filters::ws::Ws| async {

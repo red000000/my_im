@@ -7,7 +7,7 @@ use tower::limit::ConcurrencyLimit;
 use tower::load::{CompleteOnResponse, PendingRequests};
 
 pub mod hello_world {
-    include!("../proto-compiled/services.rs");
+    include!("proto-gen/services.rs");
 }
 
 #[tokio::main]

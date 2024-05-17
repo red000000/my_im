@@ -19,6 +19,10 @@ impl GrpcErrorTemplate {
         code: 2,
         message_template: "Failed to get data from Redis",
     };
+    pub const ALL_PUSH_URLS_FAILED: GrpcErrorTemplate = GrpcErrorTemplate {
+        code: 3,
+        message_template: "Failed to push all message by urls ",
+    };
     pub const JSON_PARSE_ERROR: GrpcErrorTemplate = GrpcErrorTemplate {
         code: 100,
         message_template: "Failed to parse JSON",
@@ -51,16 +55,20 @@ impl GrpcErrorTemplate {
         code: 107,
         message_template: "Failed to convert reqwest response to string",
     };
-    pub const DYN_ERROR:GrpcErrorTemplate=GrpcErrorTemplate{
-        code:108,
-        message_template:"Failed to convert dyn error to string"
+    pub const DYN_ERROR: GrpcErrorTemplate = GrpcErrorTemplate {
+        code: 108,
+        message_template: "Failed to convert dyn error to string",
     };
-    pub const TONIC_TRANSPORT_ERROR:GrpcErrorTemplate=GrpcErrorTemplate{
-        code:109,
-        message_template:"Failed to convert tonic transport error to string"
+    pub const TONIC_TRANSPORT_ERROR: GrpcErrorTemplate = GrpcErrorTemplate {
+        code: 109,
+        message_template: "Failed to convert tonic transport error to string",
     };
-    pub const STATUS_ERROR:GrpcErrorTemplate=GrpcErrorTemplate{
-        code:110,
-        message_template:"Failed to convert tonic status error to string"
+    pub const STATUS_ERROR: GrpcErrorTemplate = GrpcErrorTemplate {
+        code: 110,
+        message_template: "Failed to convert tonic status error to string",
+    };
+    pub const RDKAFKA_ERROR: GrpcErrorTemplate = GrpcErrorTemplate {
+        code: 111,
+        message_template: "Failed to convert Rdkafka error to string",
     };
 }
