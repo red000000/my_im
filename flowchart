@@ -1,0 +1,20 @@
+//client上线，建立连接
+client -> service_server service_server hearbeat to all servers use http
+service_server-> client
+client -> warp_server(ws)
+client <-> warp_server(ws) heartbeat use ws
+
+//信息推送
+client -> warp_server
+warp_server-> push_server 
+push_server -> kafka
+kafka ->push_server  kafka -> consumers
+push_server -> warp_server  warp_server -> all_clients(new msg)  consumers -> db
+warp_server -> client
+
+//获取新消息
+warp_server -> all_clients
+all_clients -> warp_server 
+warp_server -> db
+db -> warp_server
+warp_server -> all_clients
