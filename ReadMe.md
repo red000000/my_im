@@ -1,4 +1,4 @@
-# IM系统(施工ing)
+# IM系统(debuging~)
 基于tokio框架，使用bb8异步连接数据库,用于学习    
 使用到的数据库有:  
 - redis  
