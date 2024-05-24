@@ -1,9 +1,0 @@
-syntax = "proto3";
-package push;
-
-import "data.proto";
-service Greeter {
-  rpc HeartBeat(data.HeartBeatRequest) returns (data.HeartBeatReply){};
-  rpc PushMsg(data.Msg) returns (data.PushResult){};
-}
-

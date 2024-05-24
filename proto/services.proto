@@ -1,7 +1,0 @@
-syntax = "proto3";
-package services;
-
-import "data.proto";
-service Greeter {
-  rpc GetServices(data.GetServicesMsg) returns (stream data.ServiceMsg){};
-}
