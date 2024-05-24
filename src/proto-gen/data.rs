@@ -28,10 +28,14 @@ pub struct HeartBeatReply {
 #[derive(Clone, PartialEq, ::prost::Message)]
 pub struct Msg {
     #[prost(string, tag = "1")]
-    pub msg: ::prost::alloc::string::String,
+    pub time: ::prost::alloc::string::String,
     #[prost(string, tag = "2")]
-    pub kafka_topic: ::prost::alloc::string::String,
+    pub client_uuid: ::prost::alloc::string::String,
     #[prost(string, tag = "3")]
+    pub msg: ::prost::alloc::string::String,
+    #[prost(string, tag = "4")]
+    pub kafka_topic: ::prost::alloc::string::String,
+    #[prost(string, tag = "5")]
     pub kafka_key: ::prost::alloc::string::String,
 }
 #[allow(clippy::derive_partial_eq_without_eq)]

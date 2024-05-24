@@ -1,11 +1,13 @@
 use futures_util::stream;
 use futures_util::Stream;
 
-use my_im::const_file::*;
+use my_im::ConstFile::times::SERVER_DEFAULT_SLEEP_TIME;
+use my_im::ConstFile::{DEFAULT_REDIS_URL, HTTP_MODE, SERVER_HEARBEAT_URL};
+
 use my_im::data::{GetServicesMsg, ServiceMsg};
 use my_im::grpc_errors::GrpcErrors;
-use my_im::redis_pool::RedisPool;
 use my_im::services::greeter_server::{Greeter, GreeterServer};
+use my_im::RedisPool::RedisPool;
 
 use reqwest::Client;
 use std::net::SocketAddr;
@@ -88,7 +90,7 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     });
     loop {
         //打印hearbeat计数器
-        tokio::time::sleep(tokio::time::Duration::from_secs(5)).await;
+        tokio::time::sleep(tokio::time::Duration::from_secs(SERVER_DEFAULT_SLEEP_TIME)).await;
         println!("hearbeat is running,count :{}", *count.try_lock()?);
     }
 }
@@ -99,12 +101,12 @@ async fn start_heartbeat(
     pool_clone: Arc<Mutex<RedisPool>>,
 ) -> Result<(), GrpcErrors> {
     use tokio::time::{self, Duration};
-    let mut interval = time::interval(Duration::from_secs(DEFAULT_SLEEP_TIME));
+    let mut interval = time::interval(Duration::from_secs(SERVER_DEFAULT_SLEEP_TIME));
     loop {
         interval.tick().await;
         let services_msgs = pool_clone.try_lock()?.get_service_msgs_from_redis().await?;
         for service_msg in services_msgs {
-            let heartbeat_url = format!("{}{}", service_msg.url, SERVER_HEARBEAT_URL);
+            let heartbeat_url = format!("{}{}{}", HTTP_MODE, service_msg.url, SERVER_HEARBEAT_URL);
             match client.get(heartbeat_url).send().await {
                 Ok(response) => {
                     if response.status().is_success() {

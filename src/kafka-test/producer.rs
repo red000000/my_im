@@ -7,16 +7,15 @@ async fn main() {
     let producer: FutureProducer = ClientConfig::new()
         .set(
             "bootstrap.servers",
-            "localhost:9094,localhost:9095,localhost:9096",
+            "192.168.33.144:9094,192.168.33.144:9095,192.168.33.144:9096",
         )
-        .set("acks", "1")
-        .set("debug", "broker,topic,msg")
+        //.set("security.protocol", "PLAINTEXT")
         .create()
         .expect("Producer creation error");
 
     // 主题和消息内容
 
-    let topic = "test-topic";
+    let topic = "text";
     let payload = format!("CNMD SB ");
 
     // 发送消息

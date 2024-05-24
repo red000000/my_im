@@ -8,14 +8,19 @@ async fn main() {
     // 创建 Kafka 消费者配置
     let consumer: StreamConsumer = ClientConfig::new()
         .set("group.id", "test-group")
-        .set("bootstrap.servers", "localhost:9094,localhost:9095,localhost:9096")
-        .set("auto.offset.reset", "latest")
+        .set(
+            "bootstrap.servers",
+            "192.168.33.144:9094,192.168.33.144:9095,192.168.33.144:9096",
+        )
+        //.set("security.protocol", "PLAINTEXT")
+        .set("auto.offset.reset", "earliest")
+        //.set("debug", "broker,topic,msg")
         .create()
         .expect("Consumer creation failed");
 
     // 订阅主题
     consumer
-        .subscribe(&["test-topic"])
+        .subscribe(&["text"])
         .expect("Can't subscribe to specified topics");
     println!("ok");
     // 消费消息

@@ -84,7 +84,11 @@ impl From<rdkafka::error::KafkaError> for GrpcErrors {
         GrpcErrors::RdkafkaError(error)
     }
 }
-
+impl From<(rdkafka::error::KafkaError, rdkafka::message::OwnedMessage)> for GrpcErrors {
+    fn from(error: (rdkafka::error::KafkaError, rdkafka::message::OwnedMessage)) -> Self {
+        GrpcErrors::RdkafkaError(error.0)
+    }
+}
 impl std::fmt::Display for GrpcErrors {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         match self {

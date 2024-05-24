@@ -9,9 +9,11 @@ name = "services-server"
 path = "src/services-server.rs"
 
 [[bin]] # 用来运行 HelloWorld gRPC 客户端的可执行文件
-name = "warp-servers"
-path = "src/warp-servers.rs"
-
+name = "ws-servers"
+path = "src/ws-servers.rs"
+[[bin]]
+name = "push-servers"
+path = "src/push-servers.rs"
 [[bin]]
 name = "producer"
 path = "src/kafka-test/producer.rs"
@@ -35,6 +37,7 @@ serde_json = "1.0.116"
 tokio-tungstenite = "0.21.0"
 tonic = "0.11.0"
 chrono = "0.4.38"
+
 [dependencies.tokio]
 version = "1.37"
 features = ["full"]
@@ -51,5 +54,8 @@ features = ["json"]
 version = "1.0.200"
 features = ["derive"]
 
+[dependencies.uuid]
+version = "1.8.0"
+features = ["v4", "fast-rng", "macro-diagnostics"]
 [build-dependencies]
 tonic-build = "0.11"

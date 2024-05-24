@@ -15,6 +15,6 @@ message HeartBeatRequest{}
 
 message HeartBeatReply{bool result=1;}
 
-message Msg { string msg = 1; string kafka_topic=2;string kafka_key=3; }
+message Msg { string time =1;string client_uuid=2; string msg = 3; string kafka_topic=4;string kafka_key=5; }
 
 message PushResult { bool result = 1; }

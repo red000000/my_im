@@ -5,7 +5,7 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         &[
             "proto/data.proto",
             "proto/services.proto",
-            //"proto/push.proto",  grpc push test
+            "proto/push.proto",
         ],
         &["proto/"],
     )?;

@@ -1,6 +1,8 @@
-use super::const_file::*;
+use self::service_group::GENERAL_SERVICE_GROUP;
+
 use super::data::ServiceMsg;
 use super::grpc_errors::GrpcErrors;
+use super::ConstFile::*;
 use bb8::Pool;
 use bb8_redis::redis::AsyncCommands;
 use bb8_redis::RedisConnectionManager;
@@ -24,8 +26,8 @@ impl RedisPool {
         let mut datas = Vec::new();
         let mut services = Vec::new();
         let mut conn = self.pool.get().await?;
-
-        // 获取所有服务组的键（例如 从service_server_urls中获取push_server_urls）
+        //TODO:不使用keys
+        // 获取所有服务组的键（例如 从service_server_urls中获取ws_server_urls）
         let service_groups: Vec<String> = conn.smembers(GENERAL_SERVICE_GROUP).await?;
 
         for service_group_key in service_groups {
