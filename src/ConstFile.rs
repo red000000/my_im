@@ -40,7 +40,8 @@ pub mod client_result_type {
 
 pub mod kafka {
     ///use kafka init
-    pub const KAFKA_CLUSER_IP: &str = "192.168.33.144";
+    /// UPDATE:there need update when you start push servers or you can set static ip
+    pub const KAFKA_CLUSER_IP: &str = "192.168.31.220";
     pub const KAFKA_CLUSER_PORTS: [&str; 3] = ["9094", "9095", "9096"];
     pub const SECURITY_PROTOCOL: &str = "PLAINTEXT";
     pub const GROUP_ID: &str = "test-group";

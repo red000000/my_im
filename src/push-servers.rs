@@ -1,7 +1,7 @@
 use std::net::SocketAddr;
 use std::sync::Arc;
 
-use log::info;
+use log::{info, warn};
 use my_im::ConstFile::kafka::SECURITY_PROTOCOL;
 use my_im::ConstFile::DEFAULT_REDIS_URL;
 use my_im::Kafka::ProducerTools;
@@ -32,7 +32,7 @@ impl PushInner {
         let heart_beat_client = Client::builder().no_proxy().build()?;
         let pool_clone = Arc::new(Mutex::new(RedisPool::new(DEFAULT_REDIS_URL).await?));
         //:fix the warnning about kafka don't have bootstrap server
-        let kafka_producer = ClientConfig::new().create()?;
+        let kafka_producer = ProducerTools::new()?;
         Ok(Self {
             heart_beat_client,
             kafka_producer,
@@ -78,7 +78,7 @@ impl Greeter for PushInner {
         info!("push msg!");
         let msg = request.into_inner();
         self.send_msg(msg).await?;
-
+        info!("push msg success~");
         Ok(Response::new(PushResult { result: true }))
     }
 }
@@ -90,26 +90,15 @@ async fn main() -> Result<(), Box<dyn std::error::Error>> {
     let greeter_client = Client::builder().no_proxy().build()?;
     let pool_clone = Arc::new(Mutex::new(RedisPool::new(DEFAULT_REDIS_URL).await?));
     // heart beat and grpc server in one thread to avoid the problem of grpc server stop but http server alive!
-    match tokio::try_join!(
-        grpc_server_run(bind_addr, greeter_client, pool_clone),
-        http_heart_beat()
-    ) {
+    let future1 = http_heart_beat();
+    let future2 = grpc_server_run(bind_addr, greeter_client, pool_clone);
+    match tokio::try_join!(future1, future2) {
         Ok(((), ())) => Ok(()),
         Err(e) => {
             println!("{},{}", e, "The services server is stop!");
             panic!();
         }
     }
-
-    /*
-    match grpc_server_run(bind_addr, greeter_client, pool_clone).await {
-        Ok(()) => Ok(()),
-        Err(e) => {
-            println!("{},{}", e, "The services server is stop!");
-            panic!();
-        }
-    }
-    */
 }
 async fn http_heart_beat() -> Result<(), Box<dyn std::error::Error>> {
     let log = warp::log("heart_beat_server");
@@ -128,11 +117,9 @@ async fn grpc_server_run(
     pool_clone: Arc<Mutex<RedisPool>>,
 ) -> Result<(), Box<dyn std::error::Error>> {
     let mut push_inner = PushInner::new().await?;
-    let kafka_producer = ProducerTools::new()?;
     push_inner
         .heart_beat_client(greeter_client)
-        .pool_clone(pool_clone)
-        .kafka_producer(kafka_producer);
+        .pool_clone(pool_clone);
     Server::builder()
         .add_service(GreeterServer::new(push_inner))
         .serve(bind_addr)

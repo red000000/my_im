@@ -25,6 +25,7 @@ impl ProducerTools {
         // 创建 Kafka 生产者配置
         let producer: FutureProducer = ClientConfig::new()
             .set("bootstrap.servers", bootstrap_servers)
+            .set("security.protocol", SECURITY_PROTOCOL)
             .set("acks", ACKS)
             .create()?;
         Ok(producer)
@@ -68,7 +69,7 @@ async fn test_consumer() {
     std::env::set_var("RUST_LOG", "info");
     pretty_env_logger::init();
     let consumer = ConsumerTools::new().unwrap();
-    consumer.subscribe(&["text2"]).unwrap();
+    consumer.subscribe(&["text"]).unwrap();
     loop {
         match consumer.recv().await {
             Ok(message) => {

@@ -11,8 +11,8 @@ use futures_util::{SinkExt, StreamExt, TryStreamExt};
 use log::{error, info, warn};
 
 use std::sync::Arc;
+
 use tokio::net::TcpStream;
-use tokio::sync::Mutex;
 use tokio::time::Duration;
 use tokio_tungstenite::tungstenite::Message;
 use tokio_tungstenite::{MaybeTlsStream, WebSocketStream};
@@ -35,10 +35,10 @@ type BalancedServiceList =
 pub struct Client {
     //TODO:the uuid need a sign up button! there is test
     uuid: Uuid,
-    alive: Arc<Mutex<bool>>,
-    sink: Option<Arc<Mutex<ClientSink>>>,
-    stream: Option<Arc<Mutex<ClientStream>>>,
-    push_urls: Arc<Mutex<Vec<String>>>,
+    alive: Arc<std::sync::Mutex<bool>>,
+    sink: Option<Arc<tokio::sync::Mutex<ClientSink>>>,
+    stream: Option<Arc<tokio::sync::Mutex<ClientStream>>>,
+    push_urls: Arc<std::sync::Mutex<Vec<String>>>,
 }
 pub struct ClientTools;
 pub enum HandleMode {
@@ -50,10 +50,10 @@ impl Client {
     pub fn new() -> Result<Self, Box<dyn std::error::Error>> {
         Ok(Self {
             uuid: Uuid::new_v4(),
-            alive: Arc::new(Mutex::new(false)),
+            alive: Arc::new(std::sync::Mutex::new(false)),
             sink: None,
             stream: None,
-            push_urls: Arc::new(Mutex::new(Vec::new())),
+            push_urls: Arc::new(std::sync::Mutex::new(Vec::new())),
         })
     }
 
@@ -99,22 +99,22 @@ impl Client {
 
     fn ws(&mut self, ws: WebSocketStream<MaybeTlsStream<TcpStream>>) -> &mut Self {
         let (sink, stream) = ws.split();
-        self.sink = Some(Arc::new(Mutex::new(sink)));
-        self.stream = Some(Arc::new(Mutex::new(stream)));
+        self.sink = Some(Arc::new(tokio::sync::Mutex::new(sink)));
+        self.stream = Some(Arc::new(tokio::sync::Mutex::new(stream)));
         self
     }
 }
 impl ClientTools {
     pub async fn connect_async_urls(
-        push_urls: Arc<Mutex<Vec<String>>>,
-        alive: Arc<Mutex<bool>>,
+        push_urls: Arc<std::sync::Mutex<Vec<String>>>,
+        alive: Arc<std::sync::Mutex<bool>>,
     ) -> Result<Option<WebSocketStream<MaybeTlsStream<TcpStream>>>, Box<dyn std::error::Error>>
     {
         let mut all_failed = true;
         let mut web_socket = None;
 
         tokio::time::sleep(Duration::from_secs(CLIENT_DEFAULT_SLEEP_TIME)).await; //等待urls更新
-        let urls = push_urls.try_lock()?;
+        let urls = push_urls.try_lock().map_err(|_| "get urls mutex error!")?;
         for url in urls.iter() {
             match tokio_tungstenite::connect_async(format!(
                 "{}{}{}",
@@ -125,7 +125,7 @@ impl ClientTools {
                 Ok((ws, _)) => {
                     // 如果有一个 URL 发送成功，则将标记设置为 false
                     all_failed = false;
-                    *alive.try_lock()? = true;
+                    *alive.try_lock().map_err(|_| "get alive mutex error!")? = true;
                     web_socket = Some(ws);
                     break;
                 }
@@ -144,13 +144,16 @@ impl ClientTools {
     }
     async fn update_service_urls(
         service_urls: Vec<&'static str>,
-        ws_urls: Arc<Mutex<Vec<String>>>,
-    ) -> Result<(), GrpcErrors> {
+        ws_urls: Arc<std::sync::Mutex<Vec<String>>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let balance_service_list = ClientTools::get_balanced_service_list(service_urls).await;
         let mut service_client = ServicesClient::new(balance_service_list);
 
         loop {
-            ws_urls.try_lock()?.clear();
+            ws_urls
+                .try_lock()
+                .map_err(|_| "get ws_urls mutex error!")?
+                .clear();
             let mut stream = service_client
                 .get_services(GetServicesMsg::default())
                 .await?
@@ -159,17 +162,23 @@ impl ClientTools {
                 //只获取ws服务器urls
                 if service_msg.service_group == WS_SERVER_GROUP && service_msg.live_type == "1" {
                     info!("ws_server_url: {}", service_msg.url);
-                    ws_urls.try_lock()?.push(service_msg.url);
+                    ws_urls
+                        .try_lock()
+                        .map_err(|_| "get ws_urls mutex error!")?
+                        .push(service_msg.url);
                 }
             }
             tokio::time::sleep(Duration::from_secs(CLIENT_DEFAULT_SLEEP_TIME)).await;
         }
     }
     /// send heart beat by ws
-    async fn heart_beat(sink: Arc<Mutex<ClientSink>>) -> Result<(), Box<dyn std::error::Error>> {
+    async fn heart_beat(
+        sink: Arc<tokio::sync::Mutex<ClientSink>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         let heart_beat_msg = format!("{}", HEARTBEAT_MESSAGE);
         loop {
-            sink.try_lock()?
+            sink.try_lock()
+                .map_err(|_| "get sink mutex error!")?
                 .send(Message::Text(heart_beat_msg.clone()))
                 .await?;
             info!("heart beat running");
@@ -177,7 +186,7 @@ impl ClientTools {
         }
     }
     async fn push(
-        sink: Arc<Mutex<ClientSink>>,
+        sink: Arc<tokio::sync::Mutex<ClientSink>>,
         msg: ClientMsg,
     ) -> Result<(), Box<dyn std::error::Error>> {
         let string_msg = format!(
@@ -192,7 +201,9 @@ impl ClientTools {
             .await?;
         Ok(())
     }
-    async fn recevice(stream: Arc<Mutex<ClientStream>>) -> Result<(), Box<dyn std::error::Error>> {
+    async fn recevice(
+        stream: Arc<tokio::sync::Mutex<ClientStream>>,
+    ) -> Result<(), Box<dyn std::error::Error>> {
         info!("recevice running");
 
         while let Ok(Some(message)) = stream.try_lock()?.try_next().await {
